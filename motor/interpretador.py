@@ -7,7 +7,7 @@ Aqui entra o LLM. Repare em duas coisas:
 2. O LLM devolve JSON no vocabulário da ontologia — não SQL. Esse JSON é
    validado antes de ir para o compilador.
 
-Se ANTHROPIC_API_KEY estiver definida e o pacote `anthropic` instalado, usa o
+Se ANTHROPIC_ONTOLOGY_API_KEY (ou ANTHROPIC_API_KEY) estiver definida e o pacote `anthropic` instalado, usa o
 Claude. Senão, usa um interpretador de regras simples (para a demo rodar
 offline) — que, note, também tira os sinônimos da ontologia.
 """
@@ -63,9 +63,14 @@ def _prompt(contexto: str, pergunta: str) -> str:
             f"Pergunta: {pergunta}")
 
 
+def _chave_api() -> str | None:
+    """Aceita uma variável específica do projeto ou a padrão do SDK."""
+    return os.getenv("ANTHROPIC_ONTOLOGY_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+
+
 def _via_llm(prompt: str) -> dict:
     import anthropic  # opcional
-    cli = anthropic.Anthropic()
+    cli = anthropic.Anthropic(api_key=_chave_api())
     resp = cli.messages.create(model=os.getenv("MODELO", "claude-sonnet-5-5"), max_tokens=800,
                                messages=[{"role": "user", "content": prompt}])
     texto = resp.content[0].text
@@ -122,7 +127,7 @@ def validar_intencao(g: Graph, it: dict) -> list[str]:
 
 def interpretar(g: Graph, pergunta: str, hoje: date) -> tuple[dict, str, str]:
     contexto = montar_contexto(g, hoje)
-    if os.getenv("ANTHROPIC_API_KEY"):
+    if _chave_api():
         try:
             return _via_llm(_prompt(contexto, pergunta)), contexto, "LLM"
         except Exception as e:  # sem rede, sem pacote etc.

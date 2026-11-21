@@ -55,7 +55,7 @@ python validar.py                             # SHACL no grafo oficial
 python validar.py testes/definicao_com_erros.ttl   # vê a validação barrando um cadastro errado
 ```
 
-Por padrão a demo usa um **interpretador de regras offline** no lugar do LLM. Para usar o Claude: `pip install anthropic` e `export ANTHROPIC_API_KEY=...`. O resto do pipeline não muda, e é esse o ponto.
+Por padrão a demo usa um **interpretador de regras offline** no lugar do LLM. Para usar o Claude: `pip install anthropic` e `export ANTHROPIC_ONTOLOGY_API_KEY=...` (`ANTHROPIC_API_KEY` também funciona). O resto do pipeline não muda, e é esse o ponto.
 
 ## Exercícios sugeridos (cada um ensina um conceito)
 
