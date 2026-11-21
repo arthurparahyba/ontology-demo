@@ -1,0 +1,50 @@
+# =============================================================================
+# SHACL: regras de QUALIDADE das definições (o "guardrail").
+# OWL descreve o mundo; SHACL diz "este grafo está válido para eu usar?".
+# Se alguém (humano ou LLM) cadastrar uma definição sem vigência, sem dono,
+# ou com vigência sobreposta a outra do mesmo conceito, a validação falha.
+# =============================================================================
+@prefix ex:   <https://exemplo.com/ont#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+ex:DefinicaoShape a sh:NodeShape ;
+    sh:targetClass ex:DefinicaoDeConceito ;
+    sh:property [ sh:path ex:define ; sh:minCount 1 ; sh:maxCount 1 ;
+                  sh:message "Toda definição deve definir exatamente um conceito." ] ;
+    sh:property [ sh:path ex:vigenteDe ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:date ;
+                  sh:message "Toda definição precisa de uma data de início de vigência (xsd:date)." ] ;
+    sh:property [ sh:path ex:vigenteAte ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
+    sh:property [ sh:path prov:wasAttributedTo ; sh:minCount 1 ;
+                  sh:message "Toda definição precisa de um responsável (proveniência)." ] ;
+    sh:property [ sh:path ex:criterio ; sh:minCount 1 ;
+                  sh:message "Definição sem critério não serve para gerar consulta." ] ;
+    sh:sparql [
+        sh:message "Vigência sobreposta com outra definição do mesmo conceito: {?outra}" ;
+        sh:select """
+            SELECT $this ?outra WHERE {
+                $this <https://exemplo.com/ont#define> ?c ;
+                      <https://exemplo.com/ont#vigenteDe> ?i1 .
+                OPTIONAL { $this <https://exemplo.com/ont#vigenteAte> ?f1 }
+                ?outra <https://exemplo.com/ont#define> ?c ;
+                       <https://exemplo.com/ont#vigenteDe> ?i2 .
+                OPTIONAL { ?outra <https://exemplo.com/ont#vigenteAte> ?f2 }
+                FILTER (?outra != $this)
+                FILTER (?i1 <= COALESCE(?f2, "9999-12-31"^^<http://www.w3.org/2001/XMLSchema#date>)
+                     && ?i2 <= COALESCE(?f1, "9999-12-31"^^<http://www.w3.org/2001/XMLSchema#date>))
+            }"""
+    ] .
+
+ex:TempoDeCasaShape a sh:NodeShape ;
+    sh:targetClass ex:CriterioTempoDeCasa ;
+    sh:property [ sh:path ex:anosMinimos ; sh:minCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 0 ] .
+
+ex:ListaShape a sh:NodeShape ;
+    sh:targetClass ex:CriterioLista ;
+    sh:property [ sh:path ex:membro ; sh:minCount 1 ; sh:class ex:Bairro ] .
+
+ex:BairroShape a sh:NodeShape ;
+    sh:targetClass ex:Bairro ;
+    sh:property [ sh:path ex:codigoNoBanco ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+                  sh:message "Bairro sem vínculo com o banco: não dá para gerar SQL." ] .

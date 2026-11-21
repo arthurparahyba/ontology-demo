@@ -1,0 +1,5 @@
+rdflib>=7.0
+pyshacl>=0.26
+duckdb>=1.0
+# opcional, para usar um LLM real no interpretador:
+# anthropic

@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang='pt-BR'><head><meta charset='utf-8'><title>Quantos clientes VIP tivemos no ano passado e neste ano, por bairro?</title><style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:980px;margin:32px auto;padding:0 20px;color:#1d2433;background:#fbfaf7}
+h1{font-size:22px;margin-bottom:4px} .q{color:#5b6475;margin-top:0}
+table{border-collapse:collapse;width:100%;margin:16px 0;background:#fff}
+th,td{border-bottom:1px solid #e6e3dc;padding:8px 10px;text-align:left;font-size:14px}
+th{background:#f1efe9;font-weight:600} td.n{text-align:right;font-variant-numeric:tabular-nums}
+td.na{background:repeating-linear-gradient(45deg,#f6f3ec,#f6f3ec 6px,#ece7dc 6px,#ece7dc 12px);color:#8a6d3b;text-align:center;font-size:12px}
+.aviso{background:#fff6e0;border-left:4px solid #e0a100;padding:10px 14px;margin:12px 0;font-size:14px}
+.sup{background:#eef4ff;border-left:4px solid #3b6fd8;padding:10px 14px;margin:12px 0;font-size:14px}
+.regra{font-size:13px;color:#3d4557} details{margin-top:18px} pre{background:#1d2433;color:#e8e6df;padding:14px;overflow:auto;font-size:12px;border-radius:6px}
+.tag{display:inline-block;background:#e9e6de;border-radius:10px;padding:1px 8px;font-size:12px;margin-right:4px}
+</style></head><body><h1>Quantos clientes VIP tivemos no ano passado e neste ano, por bairro?</h1><p class='q'>Interpretado por: regras (offline) · modo temporal: <b>como_era</b></p><div class='sup'><b>Como entendi a pergunta</b><ul><li>2026 ainda não terminou: avaliado em 2026-11-21.</li><li>Cada ano usa a definição vigente naquele ano.</li></ul></div><div class='aviso'>⚠ &#x27;Bairro nobre&#x27; usa definições diferentes: 2025 → Bairros nobres — revisão 2025; 2026 → Bairros nobres — revisão 2026. Entraram em 2026: Dionísio Torres, Mucuripe.</div><table><tr><th>Bairro</th><th>2025</th><th>2026</th><th>Observação</th></tr><tr><td>Aldeota</td><td class='n'>21</td><td class='n'>25</td><td></td></tr><tr><td>Cocó</td><td class='n'>33</td><td class='n'>37</td><td></td></tr><tr><td>Dionísio Torres</td><td class='na' title='Bairro não classificado como nobre em 2025'>não era nobre</td><td class='n'>36</td><td>fora da lista de bairros nobres em 2025</td></tr><tr><td>Guararapes</td><td class='n'>31</td><td class='n'>33</td><td></td></tr><tr><td>Meireles</td><td class='n'>19</td><td class='n'>21</td><td></td></tr><tr><td>Mucuripe</td><td class='na' title='Bairro não classificado como nobre em 2025'>não era nobre</td><td class='n'>30</td><td>fora da lista de bairros nobres em 2025</td></tr><tr><td>Varjota</td><td class='n'>24</td><td class='n'>25</td><td></td></tr><tr><th>Total</th><th class='n'>128</th><th class='n'>207</th><th></th></tr></table><h3>Regras aplicadas (proveniência)</h3><table><tr><th>Período</th><th>Conceito</th><th>Definição</th><th>Vigência</th><th>Responsável</th><th>Fonte</th></tr><tr><td>2025</td><td>Bairro nobre</td><td>Bairros nobres — revisão 2025<br><span class='regra'><span class=tag>Aldeota</span><span class=tag>Cocó</span><span class=tag>Guararapes</span><span class=tag>Meireles</span><span class=tag>Varjota</span></span></td><td>2025-01-01 → 2025-12-31</td><td>Inteligência de Mercado</td><td>Estudo de renda por bairro, dez/2024</td></tr><tr><td>2025</td><td>Cliente VIP</td><td>Cliente VIP — v1</td><td>2024-01-01 → atual</td><td>Diretoria Comercial</td><td>Ata do comitê comercial 2023-11</td></tr><tr><td>2026</td><td>Bairro nobre</td><td>Bairros nobres — revisão 2026<br><span class='regra'><span class=tag>Aldeota</span><span class=tag>Cocó</span><span class=tag>Dionísio Torres</span><span class=tag>Guararapes</span><span class=tag>Meireles</span><span class=tag>Mucuripe</span><span class=tag>Varjota</span></span></td><td>2026-01-01 → atual</td><td>Inteligência de Mercado</td><td>Estudo de renda por bairro, dez/2025</td></tr><tr><td>2026</td><td>Cliente VIP</td><td>Cliente VIP — v1</td><td>2024-01-01 → atual</td><td>Diretoria Comercial</td><td>Ata do comitê comercial 2023-11</td></tr></table><details><summary>SQL gerado</summary><pre>WITH p_2025 AS (
+  SELECT c.id AS cliente_id, &#x27;2025&#x27; AS periodo
+  FROM cliente c
+  WHERE c.data_cadastro &lt;= DATE &#x27;2025-12-31&#x27; - INTERVAL 5 YEAR
+      AND c.bairro_id IN (SELECT s1.id FROM bairro s1 WHERE s1.id IN (1, 2, 3, 4, 5))
+),
+p_2026 AS (
+  SELECT c.id AS cliente_id, &#x27;2026&#x27; AS periodo
+  FROM cliente c
+  WHERE c.data_cadastro &lt;= DATE &#x27;2026-11-21&#x27; - INTERVAL 5 YEAR
+      AND c.bairro_id IN (SELECT s1.id FROM bairro s1 WHERE s1.id IN (1, 2, 3, 4, 5, 6, 7))
+),
+membros AS (
+  SELECT * FROM p_2025
+  UNION ALL SELECT * FROM p_2026
+)
+SELECT b.nome AS bairro, m.periodo, COUNT(*) AS quantidade
+FROM membros m
+JOIN cliente c ON c.id = m.cliente_id
+JOIN bairro b ON b.id = c.bairro_id
+GROUP BY b.nome, m.periodo
+ORDER BY b.nome, m.periodo</pre></details></body></html>

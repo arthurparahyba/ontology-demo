@@ -1,0 +1,97 @@
+# =============================================================================
+# NÚCLEO DA ONTOLOGIA  (T-Box: "o que existe e como se relaciona")
+#
+#  - OWL  -> classes e propriedades (o modelo conceitual formal)
+#  - SKOS -> rótulos, sinônimos e definições em linguagem natural
+#            (é isso que o LLM usa para reconhecer "VIP", "cliente premium"...)
+#  - map: -> mapeamento da ontologia para o banco físico (um "R2RML de bolso").
+#            Em produção isso seria R2RML/Ontop; aqui é simples de propósito.
+# =============================================================================
+@prefix ex:   <https://exemplo.com/ont#> .
+@prefix map:  <https://exemplo.com/map#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+<https://exemplo.com/ont> a owl:Ontology ;
+    rdfs:label "Ontologia comercial de exemplo"@pt ;
+    owl:versionInfo "0.1" .
+
+# --- Entidades "físicas" (existem como tabelas) ------------------------------
+
+ex:Cliente a owl:Class ;
+    rdfs:label "Cliente"@pt ;
+    skos:definition "Pessoa com cadastro na empresa."@pt ;
+    map:tabela "cliente" ; map:chave "id" .
+
+ex:Bairro a owl:Class ;
+    rdfs:label "Bairro"@pt ;
+    map:tabela "bairro" ; map:chave "id" .
+
+ex:resideEm a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:label "reside em"@pt ;
+    rdfs:domain ex:Cliente ; rdfs:range ex:Bairro ;
+    map:colunaFK "bairro_id" .
+
+ex:dataCadastro a owl:DatatypeProperty ;
+    rdfs:label "data de cadastro"@pt ;
+    rdfs:domain ex:Cliente ; rdfs:range xsd:date ;
+    map:coluna "data_cadastro" .
+
+ex:email a owl:DatatypeProperty ;
+    rdfs:domain ex:Cliente ; rdfs:range xsd:string ;
+    map:coluna "email" .
+
+ex:codigoNoBanco a owl:DatatypeProperty ;
+    rdfs:comment "Liga um indivíduo do grafo à chave da linha no banco (identidade)."@pt .
+
+# --- Conceitos de negócio (NÃO existem como coluna: são interpretações) -------
+# São subclasses: todo Cliente VIP é um Cliente. Mas QUEM é VIP depende de uma
+# definição que muda no tempo -> ver definicoes.ttl.
+
+ex:ConceitoDeNegocio a owl:Class ;
+    rdfs:label "Conceito de negócio"@pt .
+
+ex:ClienteVIP a owl:Class , ex:ConceitoDeNegocio , skos:Concept ;
+    rdfs:subClassOf ex:Cliente ;
+    skos:prefLabel "Cliente VIP"@pt ;
+    skos:altLabel "VIP"@pt , "cliente premium"@pt , "top cliente"@pt , "clientes especiais"@pt ;
+    skos:definition "Cliente antigo que reside em bairro nobre. Critérios exatos variam por período de vigência."@pt ;
+    ex:dono ex:DiretoriaComercial .
+
+ex:BairroNobre a owl:Class , ex:ConceitoDeNegocio , skos:Concept ;
+    rdfs:subClassOf ex:Bairro ;
+    skos:prefLabel "Bairro nobre"@pt ;
+    skos:altLabel "área nobre"@pt , "região nobre"@pt ;
+    skos:definition "Bairro classificado como nobre pela área de Inteligência de Mercado. Lista revisada anualmente."@pt ;
+    ex:dono ex:InteligenciaDeMercado .
+
+# --- Vocabulário para DEFINIÇÕES versionadas (o "contexto" de regras) --------
+
+ex:DefinicaoDeConceito a owl:Class ;
+    rdfs:label "Definição de conceito"@pt ;
+    rdfs:comment "Uma versão da regra que diz quem pertence a um conceito, com vigência e autoria."@pt .
+
+ex:define      a owl:ObjectProperty ; rdfs:domain ex:DefinicaoDeConceito ; rdfs:range ex:ConceitoDeNegocio .
+ex:vigenteDe   a owl:DatatypeProperty ; rdfs:range xsd:date .
+ex:vigenteAte  a owl:DatatypeProperty ; rdfs:range xsd:date .
+ex:criterio    a owl:ObjectProperty ; rdfs:domain ex:DefinicaoDeConceito .
+
+ex:Criterio a owl:Class .
+ex:CriterioTempoDeCasa a owl:Class ; rdfs:subClassOf ex:Criterio ;
+    rdfs:comment "Cliente cadastrado há pelo menos N anos na data de referência."@pt .
+ex:CriterioPertenceA a owl:Class ; rdfs:subClassOf ex:Criterio ;
+    rdfs:comment "O objeto ligado pela propriedade X pertence ao conceito Y (composição de conceitos)."@pt .
+ex:CriterioLista a owl:Class ; rdfs:subClassOf ex:Criterio ;
+    rdfs:comment "Pertencimento por enumeração explícita de membros."@pt .
+
+ex:anosMinimos     a owl:DatatypeProperty ; rdfs:range xsd:integer .
+ex:viaPropriedade  a owl:ObjectProperty .
+ex:conceito        a owl:ObjectProperty .
+ex:membro          a owl:ObjectProperty .
+ex:dono            a owl:ObjectProperty .
+
+ex:DiretoriaComercial    a prov:Organization ; rdfs:label "Diretoria Comercial"@pt .
+ex:InteligenciaDeMercado a prov:Organization ; rdfs:label "Inteligência de Mercado"@pt .

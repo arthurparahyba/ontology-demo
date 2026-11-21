@@ -1,0 +1,56 @@
+# =============================================================================
+# KNOWLEDGE GRAPH DE DEFINIÇÕES (A-Box: "os fatos")
+#
+# Indivíduos concretos: os bairros, e as VERSÕES das regras com vigência,
+# autoria e fonte (proveniência). É aqui que mora a resposta para
+# "o VIP do ano passado é diferente do VIP deste ano".
+#
+# Os CLIENTES não estão aqui: continuam no banco. O grafo "enxerga" o banco
+# via mapeamento (isso é a ideia de grafo virtual / OBDA).
+# =============================================================================
+@prefix ex:   <https://exemplo.com/ont#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+# --- Bairros (identidade: o indivíduo do grafo <-> a linha do banco) ---------
+ex:b_meireles       a ex:Bairro ; rdfs:label "Meireles" ;        ex:codigoNoBanco 1 .
+ex:b_aldeota        a ex:Bairro ; rdfs:label "Aldeota" ;         ex:codigoNoBanco 2 .
+ex:b_coco           a ex:Bairro ; rdfs:label "Cocó" ;            ex:codigoNoBanco 3 .
+ex:b_varjota        a ex:Bairro ; rdfs:label "Varjota" ;         ex:codigoNoBanco 4 .
+ex:b_guararapes     a ex:Bairro ; rdfs:label "Guararapes" ;      ex:codigoNoBanco 5 .
+ex:b_dionisio       a ex:Bairro ; rdfs:label "Dionísio Torres" ; ex:codigoNoBanco 6 .
+ex:b_mucuripe       a ex:Bairro ; rdfs:label "Mucuripe" ;        ex:codigoNoBanco 7 .
+
+# --- Bairro nobre: duas versões da lista --------------------------------------
+ex:def_bairro_nobre_2025 a ex:DefinicaoDeConceito ;
+    rdfs:label "Bairros nobres — revisão 2025"@pt ;
+    ex:define ex:BairroNobre ;
+    ex:vigenteDe "2025-01-01"^^xsd:date ;
+    ex:vigenteAte "2025-12-31"^^xsd:date ;
+    prov:wasAttributedTo ex:InteligenciaDeMercado ;
+    prov:hadPrimarySource "Estudo de renda por bairro, dez/2024" ;
+    ex:criterio [ a ex:CriterioLista ;
+        ex:membro ex:b_meireles , ex:b_aldeota , ex:b_coco , ex:b_varjota , ex:b_guararapes ] .
+
+ex:def_bairro_nobre_2026 a ex:DefinicaoDeConceito ;
+    rdfs:label "Bairros nobres — revisão 2026"@pt ;
+    ex:define ex:BairroNobre ;
+    ex:vigenteDe "2026-01-01"^^xsd:date ;
+    prov:wasAttributedTo ex:InteligenciaDeMercado ;
+    prov:hadPrimarySource "Estudo de renda por bairro, dez/2025" ;
+    prov:wasRevisionOf ex:def_bairro_nobre_2025 ;
+    ex:criterio [ a ex:CriterioLista ;
+        ex:membro ex:b_meireles , ex:b_aldeota , ex:b_coco , ex:b_varjota , ex:b_guararapes ,
+                  ex:b_dionisio , ex:b_mucuripe ] .
+
+# --- Cliente VIP: a regra em si é a mesma nos dois anos, mas ela DEPENDE de
+#     BairroNobre, que mudou. A composição é resolvida na data de referência.
+ex:def_vip_v1 a ex:DefinicaoDeConceito ;
+    rdfs:label "Cliente VIP — v1"@pt ;
+    ex:define ex:ClienteVIP ;
+    ex:vigenteDe "2024-01-01"^^xsd:date ;
+    prov:wasAttributedTo ex:DiretoriaComercial ;
+    prov:hadPrimarySource "Ata do comitê comercial 2023-11" ;
+    ex:criterio [ a ex:CriterioTempoDeCasa ; ex:anosMinimos 5 ] ,
+                [ a ex:CriterioPertenceA ; ex:viaPropriedade ex:resideEm ; ex:conceito ex:BairroNobre ] .

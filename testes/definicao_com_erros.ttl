@@ -1,0 +1,13 @@
+# Exemplo PROPOSITALMENTE errado: alguém cadastrou uma nova lista de bairros
+# nobres "a partir de 2025-06-01", sem responsável, e com um bairro sem
+# código no banco. Rode:  python validar.py testes/definicao_com_erros.ttl
+@prefix ex:   <https://exemplo.com/ont#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+ex:b_praia_futuro a ex:Bairro ; rdfs:label "Praia do Futuro" .
+
+ex:def_bairro_nobre_meio_2025 a ex:DefinicaoDeConceito ;
+    ex:define ex:BairroNobre ;
+    ex:vigenteDe "2025-06-01"^^xsd:date ;
+    ex:criterio [ a ex:CriterioLista ; ex:membro ex:b_meireles , ex:b_praia_futuro ] .
