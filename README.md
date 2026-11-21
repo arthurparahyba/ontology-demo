@@ -57,6 +57,19 @@ python validar.py testes/definicao_com_erros.ttl   # vê a validação barrando 
 
 Por padrão a demo usa um **interpretador de regras offline** no lugar do LLM. Para usar o Claude: `pip install anthropic` e `export ANTHROPIC_ONTOLOGY_API_KEY=...` (`ANTHROPIC_API_KEY` também funciona). O resto do pipeline não muda, e é esse o ponto.
 
+## Avaliação (bateria de referência)
+
+`avaliacao/perguntas.json` tem 20 perguntas com o gabarito em SQL escrito **à mão**, independente do compilador. Algumas perguntas exigem que o sistema **recuse**, como as que pedem um dado que não existe ou as ambíguas.
+
+```bash
+python avaliar.py --detalhes     # gera saida/avaliacao-regras.md ou saida/avaliacao-llm.md
+python testes/teste_injecao.py   # garante que intenções maliciosas não chegam ao SQL
+```
+
+Cada resposta é classificada como certa, recusa correta, **erro silencioso** (respondeu errado com cara de certo, o pior caso) ou recusa indevida. Baseline com o interpretador offline: **12/20**, com 5 erros silenciosos. Rode com a sua chave e compare.
+
+Regra do projeto: nenhuma mudança na ontologia, no prompt ou no compilador entra sem rodar `avaliar.py` antes e depois.
+
 ## Exercícios sugeridos (cada um ensina um conceito)
 
 1. **Nova versão de regra:** crie `def_vip_v2` a partir de 2026 com 4 anos de casa. Lembre de fechar a `v1` com `vigenteAte`, senão o SHACL acusa sobreposição.

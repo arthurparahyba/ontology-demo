@@ -36,37 +36,48 @@ def _slug(t: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", t.lower()).strip("-")[:60]
 
 
-def perguntar(pergunta: str, mostrar_contexto: bool = False) -> Path | None:
-    g = carregar()
-    print("=" * 78, f"\nPERGUNTA: {pergunta}")
+def executar(pergunta: str, g=None) -> dict:
+    """Roda o pipeline e devolve tudo o que aconteceu. Não imprime nada (usado pela avaliação)."""
+    g = g or carregar()
     intencao, contexto, origem = interpretar(g, pergunta, HOJE)
-    if mostrar_contexto:
-        print("\n--- CAMADA DE CONTEXTO enviada ao LLM ---\n" + contexto)
-    print(f"\n--- INTENÇÃO ({origem}) ---\n" + json.dumps(intencao, ensure_ascii=False, indent=2))
-
+    r = {"pergunta": pergunta, "intencao": intencao, "contexto": contexto, "origem": origem,
+         "status": None, "motivo": None, "sql": None, "colunas": [], "linhas": [], "periodos": []}
     erros = validar_intencao(g, intencao)
     if erros:
-        print("\n✗ Intenção recusada:", *erros, sep="\n  ")
-        return None
+        r.update(status="recusada", motivo="; ".join(erros))
+        return r
     try:
         sql, periodos = Compilador(g).compilar(intencao, HOJE)
     except ErroSemantico as e:
-        print("\n✗ Erro semântico:", e)
-        return None
-    print("\n--- SQL GERADO ---\n" + sql)
-
+        r.update(status="recusada", motivo=str(e))
+        return r
     con = duckdb.connect(str(BANCO), read_only=True)
-    cur = con.execute(sql)
-    colunas = [d[0] for d in cur.description]
-    linhas = cur.fetchall()
-    con.close()
+    try:
+        cur = con.execute(sql)
+        r.update(status="ok", sql=sql, colunas=[d[0] for d in cur.description],
+                 linhas=cur.fetchall(), periodos=periodos)
+    finally:
+        con.close()
+    return r
 
-    print(f"\n--- RESULTADO ({len(linhas)} linhas) ---")
-    for ln in linhas[:15]:
+
+def perguntar(pergunta: str, mostrar_contexto: bool = False) -> Path | None:
+    print("=" * 78, f"\nPERGUNTA: {pergunta}")
+    r = executar(pergunta)
+    if mostrar_contexto:
+        print("\n--- CAMADA DE CONTEXTO enviada ao LLM ---\n" + r["contexto"])
+    print(f"\n--- INTENÇÃO ({r['origem']}) ---\n" + json.dumps(r["intencao"], ensure_ascii=False, indent=2))
+    if r["status"] != "ok":
+        print("\n✗ Pergunta recusada:", r["motivo"])
+        return None
+    print("\n--- SQL GERADO ---\n" + r["sql"])
+    print(f"\n--- RESULTADO ({len(r['linhas'])} linhas) ---")
+    for ln in r["linhas"][:15]:
         print("  ", ln)
-    for a in avisos_de_mudanca(periodos):
+    for a in avisos_de_mudanca(r["periodos"]):
         print("⚠", a)
-    arq = relatorio.gerar(SAIDA / f"{_slug(pergunta)}.html", pergunta, intencao, sql, linhas, colunas, periodos, origem)
+    arq = relatorio.gerar(SAIDA / f"{_slug(pergunta)}.html", pergunta, r["intencao"], r["sql"],
+                          r["linhas"], r["colunas"], r["periodos"], r["origem"])
     print("\nRelatório:", arq)
     return arq
 
@@ -74,9 +85,9 @@ def perguntar(pergunta: str, mostrar_contexto: bool = False) -> Path | None:
 if __name__ == "__main__":
     if not BANCO.exists():
         criar()
-    args = sys.argv[1:]
+    args = [a for a in sys.argv[1:] if a != "--contexto"]
     if not args or args[0] == "--demo":
         for i, c in enumerate(CENARIOS):
             perguntar(c, mostrar_contexto=(i == 0))
     else:
-        perguntar(" ".join(args), mostrar_contexto="--contexto" in args)
+        perguntar(" ".join(args), mostrar_contexto="--contexto" in sys.argv)

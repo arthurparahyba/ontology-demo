@@ -1,0 +1,122 @@
+{
+  "_leia_me": "Bateria de referência (golden set). Cada SQL de referência foi escrito À MÃO, sem passar pelo compilador, para servir de gabarito independente. As regras estão repetidas de propósito: VIP 2025 = cadastro até 31/12/2020 e bairros 1-5; VIP 2026 (avaliado em 21/11/2026) = cadastro até 21/11/2021 e bairros 1-7. 'forma' diz como comparar: por_periodo (periodo, quantidade), por_bairro (bairro, periodo, quantidade), lista_emails (email) ou recusa (o certo é o sistema NÃO responder).",
+  "perguntas": [
+    {
+      "id": "Q01", "pergunta": "Quantos clientes VIP temos neste ano?",
+      "testa": "Caso básico: ano corrente avaliado na data de hoje.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2026', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q02", "pergunta": "Quantos clientes VIP tivemos no ano passado?",
+      "testa": "Ano fechado usa a lista de bairros de 2025.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2025', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5)"
+    },
+    {
+      "id": "Q03", "pergunta": "Quantos clientes VIP no ano passado e neste ano?",
+      "testa": "Dois períodos, cada um com a sua regra.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2025', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5) UNION ALL SELECT '2026', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q04", "pergunta": "Quantos clientes VIP tivemos no ano passado e neste ano, por bairro?",
+      "testa": "O cenário principal: agrupamento por bairro com regras diferentes por ano.",
+      "forma": "por_bairro",
+      "sql": "SELECT b.nome, '2025', COUNT(*) FROM cliente c JOIN bairro b ON b.id = c.bairro_id WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5) GROUP BY b.nome UNION ALL SELECT b.nome, '2026', COUNT(*) FROM cliente c JOIN bairro b ON b.id = c.bairro_id WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7) GROUP BY b.nome"
+    },
+    {
+      "id": "Q05", "pergunta": "Quantos clientes premium neste ano, por bairro?",
+      "testa": "Sinônimo SKOS ('cliente premium').",
+      "forma": "por_bairro",
+      "sql": "SELECT b.nome, '2026', COUNT(*) FROM cliente c JOIN bairro b ON b.id = c.bairro_id WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7) GROUP BY b.nome"
+    },
+    {
+      "id": "Q06", "pergunta": "Quantos top clientes tivemos nos últimos 2 anos?",
+      "testa": "Sinônimo + 'últimos N anos'.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2025', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5) UNION ALL SELECT '2026', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q07", "pergunta": "Liste os e-mails dos clientes VIP dos últimos 2 anos",
+      "testa": "Listagem: união dos VIP de cada ano (caso da campanha de e-mail).",
+      "forma": "lista_emails",
+      "sql": "SELECT c.email FROM cliente c WHERE (c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5)) OR (c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7))"
+    },
+    {
+      "id": "Q08", "pergunta": "Liste os clientes VIP deste ano",
+      "testa": "Listagem de um período só.",
+      "forma": "lista_emails",
+      "sql": "SELECT c.email FROM cliente c WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q09", "pergunta": "Liste os clientes VIP do ano passado",
+      "testa": "Listagem de ano fechado.",
+      "forma": "lista_emails",
+      "sql": "SELECT c.email FROM cliente c WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5)"
+    },
+    {
+      "id": "Q10", "pergunta": "Quantos clientes VIP no ano passado e neste ano, por bairro, usando a regra atual?",
+      "testa": "Modo definicao_atual: lista de 2026 aplicada a 2025, tempo de casa ainda medido em 2025.",
+      "forma": "por_bairro",
+      "sql": "SELECT b.nome, '2025', COUNT(*) FROM cliente c JOIN bairro b ON b.id = c.bairro_id WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5,6,7) GROUP BY b.nome UNION ALL SELECT b.nome, '2026', COUNT(*) FROM cliente c JOIN bairro b ON b.id = c.bairro_id WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7) GROUP BY b.nome"
+    },
+    {
+      "id": "Q11", "pergunta": "Quantos clientes VIP tivemos no ano passado pela regra atual?",
+      "testa": "Modo definicao_atual num período só.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2025', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q12", "pergunta": "Quantos clientes VIP nos últimos 3 anos?",
+      "testa": "Não existe lista de bairros nobres vigente em 2024: o certo é recusar, não inventar.",
+      "forma": "recusa"
+    },
+    {
+      "id": "Q13", "pergunta": "Quantos clientes especiais por bairro neste ano?",
+      "testa": "Outro sinônimo, com a ordem das palavras trocada.",
+      "forma": "por_bairro",
+      "sql": "SELECT b.nome, '2026', COUNT(*) FROM cliente c JOIN bairro b ON b.id = c.bairro_id WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id IN (1,2,3,4,5,6,7) GROUP BY b.nome"
+    },
+    {
+      "id": "Q14", "pergunta": "Qual a receita média dos clientes VIP neste ano?",
+      "testa": "Não há dado de receita: o certo é recusar.",
+      "forma": "recusa"
+    },
+    {
+      "id": "Q15", "pergunta": "Quantos clientes VIP tivemos em 2025?",
+      "testa": "Ano escrito por extenso em vez de 'ano passado'.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2025', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2020-12-31' AND c.bairro_id IN (1,2,3,4,5)"
+    },
+    {
+      "id": "Q16", "pergunta": "Quantos bairros nobres existem neste ano?",
+      "testa": "Pergunta sobre o conceito BairroNobre em si.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2026', COUNT(*) FROM bairro WHERE id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q17", "pergunta": "Quantos clientes moram em bairro nobre neste ano?",
+      "testa": "Mistura de entidades: conta CLIENTES filtrados por um conceito de BAIRRO.",
+      "forma": "por_periodo",
+      "sql": "SELECT '2026', COUNT(*) FROM cliente WHERE bairro_id IN (1,2,3,4,5,6,7)"
+    },
+    {
+      "id": "Q18", "pergunta": "Quantos clientes VIP no Meireles neste ano?",
+      "testa": "Filtro por um bairro específico (o esquema de intenção não tem filtros).",
+      "forma": "por_periodo",
+      "sql": "SELECT '2026', COUNT(*) FROM cliente c WHERE c.data_cadastro <= DATE '2021-11-21' AND c.bairro_id = 1"
+    },
+    {
+      "id": "Q19", "pergunta": "Quantos clientes VIP nos últimos 24 meses?",
+      "testa": "Janela móvel não é ano-calendário: ambíguo para as regras anuais, o certo é pedir esclarecimento.",
+      "forma": "recusa"
+    },
+    {
+      "id": "Q20", "pergunta": "Liste todos os clientes cadastrados",
+      "testa": "Pergunta simples sem conceito de negócio (fora da cobertura atual).",
+      "forma": "lista_emails",
+      "sql": "SELECT email FROM cliente"
+    }
+  ]
+}

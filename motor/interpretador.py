@@ -21,6 +21,7 @@ from datetime import date
 from rdflib import Graph
 from rdflib.namespace import RDF, RDFS
 
+from .compilador import NOME_LOCAL_VALIDO, ROTULO_VALIDO
 from .grafo import EX, PROV, SKOS
 
 ESQUEMA_INTENCAO = """{
@@ -116,12 +117,31 @@ def validar_intencao(g: Graph, it: dict) -> list[str]:
     erros = []
     if it.get("precisa_esclarecer"):
         erros.append("Esclarecimento necessário: " + it["precisa_esclarecer"])
-    if not it.get("conceito") or (EX[it["conceito"]], RDF.type, EX.ConceitoDeNegocio) not in g:
+    conceito = it.get("conceito")
+    if (not isinstance(conceito, str) or not NOME_LOCAL_VALIDO.fullmatch(conceito)
+            or (EX[conceito], RDF.type, EX.ConceitoDeNegocio) not in g):
         erros.append(f"Conceito inexistente na ontologia: {it.get('conceito')}")
     if it.get("agrupar_por") not in (None, "bairro"):
         erros.append(f"Dimensão não suportada: {it['agrupar_por']}")
-    if not it.get("periodos"):
+    if it.get("operacao") not in ("contar", "listar"):
+        erros.append(f"Operação não suportada: {it.get('operacao')}")
+    if it.get("modo_temporal", "como_era") not in ("como_era", "definicao_atual"):
+        erros.append(f"Modo temporal inválido: {it.get('modo_temporal')}")
+    periodos = it.get("periodos")
+    if not periodos or not isinstance(periodos, list):
         erros.append("Nenhum período informado.")
+    else:
+        # SEGURANÇA: tudo que vem do LLM e chega ao SQL é verificado contra um formato fechado.
+        # O rótulo vira nome de CTE e literal no SQL; sem isso, um rótulo como
+        # "2025' UNION SELECT ..." seria injetado na consulta.
+        for p in periodos:
+            if not isinstance(p, dict) or not ROTULO_VALIDO.fullmatch(str(p.get("rotulo", ""))):
+                erros.append(f"Rótulo de período inválido: {p!r}")
+                continue
+            try:
+                date.fromisoformat(str(p.get("data_ref")))
+            except ValueError:
+                erros.append(f"Data de referência inválida: {p.get('data_ref')!r}")
     return erros
 
 

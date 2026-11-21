@@ -9,6 +9,7 @@ código determinístico, testável e auditável.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -20,6 +21,12 @@ from .grafo import EX, MAP, PROV, SKOS
 
 class ErroSemantico(Exception):
     pass
+
+
+# Rótulo de período: vira nome de CTE (p_2025) e literal ('2025') no SQL.
+# Só letras, dígitos e _: nada de aspas, espaços ou ponto e vírgula.
+ROTULO_VALIDO = re.compile(r"[A-Za-z0-9_]{1,20}")
+NOME_LOCAL_VALIDO = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,63}")
 
 
 @dataclass
@@ -66,6 +73,8 @@ class Compilador:
         raise ErroSemantico(f"Sem mapeamento para o banco: {self._rotulo(classe)}")
 
     def resolver_conceito(self, nome: str) -> URIRef:
+        if not isinstance(nome, str) or not NOME_LOCAL_VALIDO.fullmatch(nome):
+            raise ErroSemantico(f"Nome de conceito inválido: {nome!r}")
         uri = EX[nome]
         if (uri, RDF.type, EX.ConceitoDeNegocio) not in self.g:
             raise ErroSemantico(f"Conceito desconhecido na ontologia: {nome}")
@@ -144,7 +153,10 @@ class Compilador:
 
         periodos = []
         for pr in intencao["periodos"]:
-            ref = date.fromisoformat(pr["data_ref"])
+            # Segunda barreira (defesa em profundidade): o compilador não confia no validador.
+            if not ROTULO_VALIDO.fullmatch(str(pr.get("rotulo", ""))):
+                raise ErroSemantico(f"Rótulo de período inválido: {pr.get('rotulo')!r}")
+            ref = date.fromisoformat(str(pr["data_ref"]))
             periodos.append(Periodo(pr["rotulo"], ref, ref if modo == "como_era" else hoje))
 
         ctes = []
